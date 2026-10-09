@@ -22,6 +22,34 @@ async function runFactorAnalysis() {
   const symbol=$('[data-symbol]').value.trim().toUpperCase() || '005930', output=$('[data-factor-result]'); output.textContent='알파 · 베타와 팩터 노출도를 계산 중…';
   try { const response=await fetch(`/api/quant/factor-analysis?symbol=${encodeURIComponent(symbol)}`), data=await response.json(); if (!response.ok) throw new Error(data.message || '분석 실패'); const capm=data.capm; const exposures=data.multiFactor.exposures.map(item => `<li><span>${item.label}</span><b>${item.loading >= 0 ? '+' : ''}${item.loading}</b></li>`).join(''); output.innerHTML=`<div class="factor-metrics"><span><small>연환산 알파</small><b>${capm.alphaAnnual >= 0 ? '+' : ''}${capm.alphaAnnual}%</b></span><span><small>시장 베타</small><b>${capm.beta}</b></span><span><small>CAPM 설명력</small><b>${(capm.rSquared * 100).toFixed(1)}%</b></span><span><small>관측치</small><b>${capm.observations}일</b></span></div><p><b>쉽게 해석하면:</b> 베타가 1이면 시장과 비슷하게 움직인다는 뜻이며, 1보다 크면 시장 움직임에 더 민감합니다. 알파는 시장 요인을 뺀 뒤 남은 수익의 추정치입니다.</p><ul class="factor-exposures">${exposures}</ul><small>${esc(data.notice)}</small>`; } catch (error) { output.innerHTML=`<span class="error">${esc(error.message)}</span>`; }
 }
+const exitSymbol = () => $('[data-symbol]').value.trim().toUpperCase() || '005930';
+const exitBadge = latest => `<span class="exit-badge ${esc(latest.action)}">${esc(latest.action)} · ${esc(latest.score)}점</span> ${esc((latest.reasons || []).join(' · ') || '발동한 규칙 없음')}`;
+async function exitCall(url, options, output, busy) {
+  output.textContent = busy;
+  try { const response = await fetch(url, options), data = await response.json(); if (!response.ok) throw new Error(data.message || '요청 실패'); return data; }
+  catch (error) { output.innerHTML = `<span class="error">${esc(error.message)}</span>`; return null; }
+}
+async function uploadFlows() {
+  const output = $('[data-exit-result]'), file = $('[data-exit-file]').files[0];
+  if (!file) { output.innerHTML = '<span class="error">CSV 파일을 먼저 선택하세요.</span>'; return; }
+  const body = new FormData(); body.append('file', file);
+  const data = await exitCall(`/api/quant/investor-flows?symbol=${encodeURIComponent(exitSymbol())}`, { method: 'POST', body }, output, '수급 CSV를 저장하는 중…');
+  if (data) output.innerHTML = `<p><b>${esc(data.symbol)}</b> 수급 ${data.rows}일 저장 (${esc(data.start)} ~ ${esc(data.end)})</p><small>${esc(data.message)}</small>`;
+}
+async function showExitScore() {
+  const output = $('[data-exit-result]');
+  const data = await exitCall(`/api/quant/exit-score?symbol=${encodeURIComponent(exitSymbol())}&limit=10`, {}, output, '매도 점수를 계산하는 중…');
+  if (!data) return;
+  const rows = data.rows.slice().reverse().map(row => `<tr><td>${esc(row.date)}</td><td>${Number(row.close).toLocaleString()}</td><td>${row.score}</td><td>${esc(row.action)}</td><td>${esc(row.reasons.join(', '))}</td></tr>`).join('');
+  output.innerHTML = `<p>${exitBadge(data.latest)}</p><div class="table-wrap"><table><thead><tr><th>일자</th><th>종가(수정)</th><th>점수</th><th>신호</th><th>규칙</th></tr></thead><tbody>${rows}</tbody></table></div><small>가격 ${data.barDays}일 · 수급 ${data.flowDays}일 사용. ${esc(data.notice)}</small>`;
+}
+async function runExitBacktest() {
+  const output = $('[data-exit-result]');
+  const data = await exitCall('/api/quant/exit-backtest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ symbol: exitSymbol() }) }, output, '매도 점수 전략을 백테스트 중…');
+  if (!data) return;
+  const trades = data.trades.slice(-8).map(t => `<tr><td>${esc(t.date)}</td><td>${esc(t.side)}</td><td>${Number(t.quantity).toLocaleString()}</td><td>${Number(t.price).toLocaleString(undefined, { maximumFractionDigits: 1 })}</td><td>${esc(t.reason)}</td></tr>`).join('');
+  output.innerHTML = `<div class="factor-metrics"><span><small>전략 수익률</small><b>${data.totalReturn}%</b></span><span><small>단순보유(첫 봉 시가)</small><b>${data.buyAndHoldReturn}%</b></span><span><small>최대낙폭</small><b>${data.maxDrawdown}%</b></span><span><small>체결</small><b>${data.tradeCount}건</b></span></div><p>최신 신호: ${exitBadge(data.latest)}</p><div class="table-wrap"><table><thead><tr><th>일자</th><th>구분</th><th>수량</th><th>체결가</th><th>사유</th></tr></thead><tbody>${trades}</tbody></table></div><small>가격 ${data.barDays}일 · 수급 ${data.flowDays}일. 단순보유는 진입 시점이 달라 직접 비교하면 전략에 유리하게 보일 수 있습니다.</small>`;
+}
 function table(rows, columns) {
   if (!rows?.length) return '<p class="empty">조회 결과가 없습니다.</p>';
   return `<div class="table-wrap"><table><thead><tr>${columns.map(([key,label]) => `<th>${label}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${columns.map(([key]) => `<td>${esc(typeof row[key] === 'number' ? row[key].toLocaleString(undefined,{maximumFractionDigits:4}) : row[key])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
@@ -60,5 +88,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('[data-load]').forEach(button => button.addEventListener('click', () => load(button.dataset.load))); $('[data-run]').addEventListener('click', () => run());
   document.querySelectorAll('[data-strategy]').forEach(button => button.addEventListener('click', () => showStrategy(button.dataset.strategy)));
   $('[data-factor-run]').addEventListener('click', runFactorAnalysis);
+  $('[data-exit-upload]').addEventListener('click', uploadFlows); $('[data-exit-score]').addEventListener('click', showExitScore); $('[data-exit-backtest]').addEventListener('click', runExitBacktest);
   try { const response=await fetch('/api/quant/overview'), data=await response.json(); if (!response.ok) throw new Error(data.message); $('[data-quant-stats]').innerHTML=`<b>연결됨</b><span>OHLCV ${Number(data.market_rows).toLocaleString()}건</span><span>전략 ${data.strategy_count}개</span><span>거래 로그 ${data.trade_count}건</span><span>${esc((data.symbols || []).join(' · '))}</span>`; } catch (error) { $('[data-quant-stats]').innerHTML=`<b class="error">${esc(error.message || 'PostgreSQL에 연결할 수 없습니다.')}</b>`; }
 });

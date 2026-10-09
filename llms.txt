@@ -20,7 +20,8 @@
 - [openapi.py](python-stock-backend/openapi.py), [api_keys.py](python-stock-backend/api_keys.py): 외부 연동용 Open API(`/openapi/v1/*`)와 API 키 발급·인증
 - [broker_test.py](python-stock-backend/broker_test.py), [broker_test_api.py](python-stock-backend/broker_test_api.py), [kis_quote_test.py](python-stock-backend/kis_quote_test.py), [kb_token_test.py](python-stock-backend/kb_token_test.py): KIS·KB증권 읽기 전용 연결 테스트
 - [alpaca_test.py](python-stock-backend/alpaca_test.py), [alpaca_test_api.py](python-stock-backend/alpaca_test_api.py): Alpaca Paper 읽기 전용 연결 테스트
-- [quant.py](python-stock-backend/quant.py): PostgreSQL 퀀트 API(백테스트·시그널·OHLCV)
+- [quant.py](python-stock-backend/quant.py): PostgreSQL 퀀트 API(백테스트·시그널·OHLCV·매도 점수·수급 CSV 업로드)
+- [exit_score.py](python-stock-backend/exit_score.py), [flows.py](python-stock-backend/flows.py): 추세+수급 매도 점수 계산과 투자자별 매매동향 CSV 파서(표준 라이브러리만 사용)
 - [ai.py](python-stock-backend/ai.py), [ai_sheet.py](python-stock-backend/ai_sheet.py), [qdrant_service.py](python-stock-backend/qdrant_service.py): AI 분석·AI Sheet·Qdrant 지식 검색
 - [models.py](python-stock-backend/models.py), [db.py](python-stock-backend/db.py): SQLAlchemy 모델과 DB 연결
 - [requirements.txt](python-stock-backend/requirements.txt): Python 의존성

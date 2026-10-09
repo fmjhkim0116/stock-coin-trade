@@ -145,6 +145,9 @@ test2@test.com / 123456
 | `GET` | `/api/quant/signals?symbol=005930&fast=20&slow=50` | 윈도우 함수 기반 MA 시그널 |
 | `POST` | `/api/quant/backtests` | 전략·체결 로그·성과 지표 저장 |
 | `GET` | `/api/quant/results` | 저장된 전략과 거래 로그 |
+| `POST` | `/api/quant/investor-flows?symbol=005930` | 투자자별 매매동향 CSV(`일자,외국인,기관[,개인]`, 1MB 이하) 업로드·저장 |
+| `GET` | `/api/quant/exit-score?symbol=005930&limit=10` | 추세+수급 매도 점수(HOLD/REDUCE/EXIT)와 발동 규칙 |
+| `POST` | `/api/quant/exit-backtest` | 매도 점수 전략 백테스트(신호 다음 거래일 시가 체결) |
 
 웹 화면은 임의 SQL을 실행하지 않고, 파라미터 바인딩된 읽기 전용 SQL 템플릿만 보여주고 실행합니다. 이는 데이터 조회 편의성과 운영 DB 보호를 함께 고려한 방식입니다.
 
@@ -403,3 +406,11 @@ curl http://localhost:3000/api/alpaca-test/paper/account
 - Paper Trading은 실제 시장 충격, 슬리피지, 호가 대기 순서 등을 완전히 재현하지 않습니다.
 - 외부 API의 URL·인증 방식·호출 제한·이용 가능 국가와 상품은 변경될 수 있으므로 실제 연동 전 공식 문서를 확인하세요.
 - 배포 환경에서는 개발용 기본 비밀번호를 사용하지 말고, 비밀 관리 도구 또는 안전한 환경 변수 주입 방식을 사용하세요.
+
+## 매도 점수(Exit Score)
+
+가격(20/60일선·20일 저점·ATR×3 트레일링 스탑·거래량 동반 음봉)과 외국인·기관 순매도를 점수로 합산합니다. 4점 이상 `REDUCE`(절반 매도), 6점 이상 `EXIT`(전량 매도)이며, `REDUCE` 수준이 3거래일 연속이면 `EXIT`로 올립니다. 수급 데이터가 없는 날짜는 수급 점수를 추정하지 않고 건너뜁니다. 로직은 [`exit_score.py`](python-stock-backend/exit_score.py)·[`flows.py`](python-stock-backend/flows.py)(표준 라이브러리만 사용)이며 독립 라이브러리 [fmjhkim0116/quant.lab](https://github.com/fmjhkim0116/quant.lab)과 같은 코드입니다. 임계값은 예시이며 교육·연구용입니다.
+
+```bash
+python3 -m unittest discover -s tests -t .   # tests/test_exit_api.py는 Flask가 필요하며 DB 계층을 대체해 SQL은 검증하지 않습니다
+```

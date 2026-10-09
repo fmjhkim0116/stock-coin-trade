@@ -8,6 +8,9 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
+from exit_score import ExitParams, backtest as exit_backtest, compute_scores
+from flows import parse_flows_csv
+
 
 quant_bp = Blueprint("quant", __name__, url_prefix="/api/quant")
 _engine = None
@@ -377,3 +380,130 @@ def factor_analysis():
                         "notice": "팩터 수익률은 교육용 샘플입니다. 실제 운용에는 검증된 시장·팩터 데이터로 교체해야 합니다."})
     except (ValueError, SQLAlchemyError) as exc:
         return jsonify({"message": f"팩터 분석 실패: {exc}"}), 400
+
+
+# --- Exit score: price trend + foreign/institution flows (CSV upload) -------------
+_MAX_CSV_BYTES = 1_000_000
+
+
+def _ensure_flow_schema(conn):
+    conn.execute(text("""
+        CREATE TABLE IF NOT EXISTS investor_flows (
+          symbol varchar(20) NOT NULL, flow_date date NOT NULL,
+          foreign_net numeric(24,2) NOT NULL, institution_net numeric(24,2) NOT NULL,
+          individual_net numeric(24,2), source varchar(50) NOT NULL DEFAULT 'csv_upload',
+          uploaded_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(symbol, flow_date)
+        )
+    """))
+
+
+def _load_bars_and_flows(conn, symbol, max_bars=1000):
+    # Adjust open/high/low by the same factor as adjusted_close so the series is consistent.
+    rows = _rows(conn.execute(text("""
+        SELECT to_char(trade_time AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD') AS date,
+               open * adjusted_close / NULLIF(close, 0) AS open, high * adjusted_close / NULLIF(close, 0) AS high,
+               low * adjusted_close / NULLIF(close, 0) AS low, adjusted_close AS close, volume
+        FROM market_data WHERE symbol = :symbol AND close > 0
+        ORDER BY trade_time DESC LIMIT :limit
+    """), {"symbol": symbol, "limit": max_bars}))
+    bars = [{**row, **{k: float(row[k]) for k in ("open", "high", "low", "close", "volume")}} for row in reversed(rows)]
+    flows = []
+    if bars:
+        flows = [{"date": row["date"], "foreign": float(row["foreign"]), "institution": float(row["institution"])}
+                 for row in _rows(conn.execute(text("""
+            SELECT to_char(flow_date, 'YYYY-MM-DD') AS date, foreign_net AS foreign, institution_net AS institution
+            FROM investor_flows WHERE symbol = :symbol AND flow_date >= :start ORDER BY flow_date
+        """), {"symbol": symbol, "start": bars[0]["date"]}))]
+    return bars, flows
+
+
+def _exit_params(source):
+    def number(key, default, low, high, cast=float):
+        return max(low, min(cast(source.get(key, default)), high))
+    return ExitParams(
+        reduce_at=number("reduceAt", 4, 1, 9, int), exit_at=number("exitAt", 6, 2, 9, int),
+        atr_mult=number("atrMult", 3.0, 0.5, 10.0), confirm_days=number("confirmDays", 3, 1, 20, int),
+    ).validate()
+
+
+@quant_bp.post("/investor-flows")
+def upload_investor_flows():
+    """Store daily foreign/institution net-buy amounts parsed from a CSV export."""
+    try:
+        symbol = request.args.get("symbol", "").upper().strip()
+        if not symbol or len(symbol) > 20 or not all(char.isalnum() or char in "-_" for char in symbol):
+            raise ValueError("유효한 symbol을 입력하세요.")
+        upload = request.files.get("file")
+        raw = upload.read(_MAX_CSV_BYTES + 1) if upload else request.get_data(cache=False)[:_MAX_CSV_BYTES + 1]
+        if len(raw) > _MAX_CSV_BYTES:
+            raise ValueError("CSV는 1MB 이하만 업로드할 수 있습니다.")
+        try:
+            text_body = raw.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            text_body = raw.decode("cp949", errors="strict")  # Korean HTS exports
+        rows = parse_flows_csv(text_body)
+        if not rows:
+            raise ValueError("데이터 행이 없습니다.")
+        with _db().begin() as conn:
+            _ensure_flow_schema(conn)
+            conn.execute(text("""
+                INSERT INTO investor_flows(symbol, flow_date, foreign_net, institution_net, individual_net)
+                VALUES(:symbol, :date, :foreign, :institution, :individual)
+                ON CONFLICT(symbol, flow_date) DO UPDATE SET foreign_net=EXCLUDED.foreign_net,
+                  institution_net=EXCLUDED.institution_net, individual_net=EXCLUDED.individual_net,
+                  source='csv_upload', uploaded_at=now()
+            """), [{"symbol": symbol, "date": r["date"], "foreign": r["foreign"], "institution": r["institution"],
+                    "individual": r.get("individual")} for r in rows])
+        return jsonify({"symbol": symbol, "rows": len(rows), "start": rows[0]["date"], "end": rows[-1]["date"],
+                        "message": "투자자별 수급 데이터를 저장했습니다. 금액 단위는 업로드한 CSV 그대로입니다."}), 201
+    except (ValueError, UnicodeDecodeError) as exc:
+        return jsonify({"message": f"업로드 실패: {exc}"}), 400
+    except SQLAlchemyError as exc:
+        return jsonify({"message": f"저장 실패: {exc.__class__.__name__}"}), 503
+
+
+@quant_bp.get("/exit-score")
+def exit_score():
+    """Latest exit scores (HOLD / REDUCE / EXIT) with the rules that fired."""
+    try:
+        symbol, limit = _params()
+        with _db().begin() as conn:
+            _ensure_flow_schema(conn)
+            bars, flows = _load_bars_and_flows(conn, symbol)
+        if len(bars) < 61:
+            return jsonify({"message": "매도 점수 계산에는 최소 61개 이상의 가격 데이터가 필요합니다."}), 400
+        scores = compute_scores(bars, flows, _exit_params(request.args))
+        closes = {bar["date"]: bar["close"] for bar in bars}
+        rows = [{**item, "close": closes[item["date"]]} for item in scores[-limit:]]
+        return jsonify({"symbol": symbol, "rows": rows, "latest": rows[-1], "flowDays": len(flows), "barDays": len(bars),
+                        "notice": "수급 데이터가 없는 날짜는 수급 점수를 계산하지 않습니다. 신호는 다음 거래일 시가 체결을 가정합니다."})
+    except ValueError as exc:
+        return jsonify({"message": str(exc)}), 400
+    except SQLAlchemyError as exc:
+        return jsonify({"message": f"점수 조회 실패: {exc.__class__.__name__}"}), 503
+
+
+@quant_bp.post("/exit-backtest")
+def exit_score_backtest():
+    data = request.get_json(silent=True) or {}
+    try:
+        symbol = str(data.get("symbol", "005930")).upper().strip()
+        if not symbol or len(symbol) > 20 or not all(char.isalnum() or char in "-_" for char in symbol):
+            raise ValueError("유효한 symbol을 입력하세요.")
+        fee_rate = max(0.0, min(float(data.get("feeRate", 0.00015)), 0.02))
+        slippage = max(0.0, min(float(data.get("slippage", 0.0005)), 0.02))
+        with _db().begin() as conn:
+            _ensure_flow_schema(conn)
+            bars, flows = _load_bars_and_flows(conn, symbol)
+        if len(bars) < 61:
+            return jsonify({"message": "백테스트에는 최소 61개 이상의 가격 데이터가 필요합니다."}), 400
+        result = exit_backtest(bars, flows, _exit_params(data), fee_rate=fee_rate, slippage=slippage)
+        return jsonify({"symbol": symbol, "totalReturn": round(result["total_return"] * 100, 4),
+                        "buyAndHoldReturn": round(result["buy_and_hold_return"] * 100, 4),
+                        "maxDrawdown": round(result["max_drawdown"] * 100, 4), "tradeCount": result["trade_count"],
+                        "trades": result["trades"][-50:], "latest": result["last_signal"], "flowDays": len(flows),
+                        "barDays": len(bars), "params": result["params"]})
+    except (ValueError, TypeError) as exc:
+        return jsonify({"message": f"백테스트 실행 실패: {exc}"}), 400
+    except SQLAlchemyError as exc:
+        return jsonify({"message": f"백테스트 실행 실패: {exc.__class__.__name__}"}), 503

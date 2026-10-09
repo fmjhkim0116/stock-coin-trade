@@ -120,3 +120,16 @@ FROM (
     FROM market_data
 ) dates
 ON CONFLICT (factor_date) DO NOTHING;
+
+-- Daily foreign/institution net-buy amounts uploaded from KRX/HTS CSV exports.
+-- Amounts keep the unit of the uploaded file; the exit score only uses ratios and signs.
+CREATE TABLE IF NOT EXISTS investor_flows (
+    symbol          varchar(20)   NOT NULL,
+    flow_date       date          NOT NULL,
+    foreign_net     numeric(24,2) NOT NULL,
+    institution_net numeric(24,2) NOT NULL,
+    individual_net  numeric(24,2),
+    source          varchar(50)   NOT NULL DEFAULT 'csv_upload',
+    uploaded_at     timestamptz   NOT NULL DEFAULT now(),
+    PRIMARY KEY (symbol, flow_date)
+);
