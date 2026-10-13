@@ -129,6 +129,7 @@ CREATE TABLE IF NOT EXISTS investor_flows (
     foreign_net     numeric(24,2) NOT NULL,
     institution_net numeric(24,2) NOT NULL,
     individual_net  numeric(24,2),
+    name            varchar(100),
     source          varchar(50)   NOT NULL DEFAULT 'csv_upload',
     uploaded_at     timestamptz   NOT NULL DEFAULT now(),
     PRIMARY KEY (symbol, flow_date)

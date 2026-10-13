@@ -20,6 +20,9 @@
 - [openapi.py](python-stock-backend/openapi.py), [api_keys.py](python-stock-backend/api_keys.py): 외부 연동용 Open API(`/openapi/v1/*`)와 API 키 발급·인증
 - [broker_test.py](python-stock-backend/broker_test.py), [broker_test_api.py](python-stock-backend/broker_test_api.py), [kis_quote_test.py](python-stock-backend/kis_quote_test.py), [kb_token_test.py](python-stock-backend/kb_token_test.py): KIS·KB증권 읽기 전용 연결 테스트
 - [alpaca_test.py](python-stock-backend/alpaca_test.py), [alpaca_test_api.py](python-stock-backend/alpaca_test_api.py): Alpaca Paper 읽기 전용 연결 테스트
+- [dashboard.py](python-stock-backend/dashboard.py): 시작 화면 대시보드 API(`/api/dashboard/*`) — 지수·브리핑, 수급 Top15, 시간외, DART 실적·공시, 보유/관심종목, 조건식 백테스트
+- [condition_lab.py](python-stock-backend/condition_lab.py): 조건식 안전 해석기(`ast` 화이트리스트)와 신호 통계·매매 백테스트(표준 라이브러리만 사용)
+- [dart_client.py](python-stock-backend/dart_client.py): OpenDART 클라이언트(`DART_API_KEY` 필요)
 - [quant.py](python-stock-backend/quant.py): PostgreSQL 퀀트 API(백테스트·시그널·OHLCV·매도 점수·수급 CSV 업로드)
 - [exit_score.py](python-stock-backend/exit_score.py), [flows.py](python-stock-backend/flows.py): 추세+수급 매도 점수 계산과 투자자별 매매동향 CSV 파서(표준 라이브러리만 사용)
 - [ai.py](python-stock-backend/ai.py), [ai_sheet.py](python-stock-backend/ai_sheet.py), [qdrant_service.py](python-stock-backend/qdrant_service.py): AI 분석·AI Sheet·Qdrant 지식 검색
@@ -28,7 +31,7 @@
 
 ## 프론트엔드 (frontend/)
 
-- [index.html](frontend/index.html): 대시보드
+- [index.html](frontend/index.html): 시작 화면 = 5탭 대시보드(지수·브리핑 / 수급·시간외 / 실적·공시 / 보유·관심 / 조건식 백테스트), 로직은 [js/dashboard.js](frontend/js/dashboard.js)
 - [trade/](frontend/trade/): 코인·주식·대체자산 모의거래 화면
 - [learning/](frontend/learning/): TradingView(Pine), KB증권, 한국투자증권(KIS), Alpaca 실전연습 학습 페이지
 - [broker-api-test.html](frontend/broker-api-test.html): 증권사 시세 테스트 UI

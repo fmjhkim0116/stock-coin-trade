@@ -414,3 +414,32 @@ curl http://localhost:3000/api/alpaca-test/paper/account
 ```bash
 python3 -m unittest discover -s tests -t .   # tests/test_exit_api.py는 Flask가 필요하며 DB 계층을 대체해 SQL은 검증하지 않습니다
 ```
+
+## 대시보드 (시작 화면, `/index.html`)
+
+시작 화면은 5개 탭의 대시보드입니다. `?tab=overview|flows|fundamentals|portfolio|conditions`로 탭을 바로 열 수 있습니다.
+
+| 탭 | 내용 | 데이터 출처 · 조건 |
+|---|---|---|
+| 지수 · 투데이 브리핑 | KOSPI·KOSDAQ·S&P500·나스닥·달러/원·미 10년물·WTI, 수치 기반 자동 브리핑, 주식/코인 Top 10 | Yahoo Finance(일봉 종가 기준), Naver 다종목 시세. 수신 실패 항목은 '수신 실패'로 표시하고 기준가로 대체하지 않습니다 |
+| 외국인·기관 Top15 · 시간외 상승 | 외국인/기관/동반 순매수 Top15, 시간외 상승 종목 | 순매수는 **관리자가 업로드한 투자자별 매매동향 CSV**(`종목코드,종목명,일자,외국인,기관[,개인]`) 기준이며 업로드된 종목 범위 안의 순위입니다. 시간외는 Naver 종목별 시세(등록 종목 + 내 보유·관심종목) |
+| 실적 턴어라운드 · 펀더멘탈 · 수주 공시 | 영업이익 흑자전환/적자 축소 판정, 매출 증가율·영업이익률·ROE·부채비율, 단일판매·공급계약 공시 | **OpenDART** — 서버 환경변수 `DART_API_KEY` 필요(없으면 '미설정' 안내). 사업보고서(연간) 기준이라 최근 분기 턴어라운드는 반영되지 않습니다 |
+| 보유종목 · 관심종목 | 모의투자 보유 손익, 관심종목 추가/삭제(회원별, 최대 50개) | 로그인 필요. 시세를 받지 못한 종목은 '수신 실패', 기준가로 대체된 값은 '시뮬레이션 가격'으로 표시 |
+| 조건식 · 신호 백테스트 | `close > hh(20) and volume > 2 * vma(20)` 같은 조건식, 신호 후 n일 수익률 통계, 매수/매도 조건·손절·익절·최대 보유일 시뮬레이션 | 가격은 내부 DB(`market_data`) 또는 Naver 일봉. 신호는 다음 거래일 시가 체결, 수수료·슬리피지 반영. 조건식은 `ast` 화이트리스트 해석기로만 실행합니다(`eval` 미사용) |
+
+| Method | Endpoint | 설명 |
+|---|---|---|
+| `GET` | `/api/dashboard/overview` | 지수·환율·금리와 브리핑 |
+| `GET` | `/api/dashboard/flows?days=1` | 외국인·기관 순매수 Top15 |
+| `POST` | `/api/dashboard/flows/upload` | 투자자별 매매동향 CSV 업로드(관리자) |
+| `GET` | `/api/dashboard/overtime` | 시간외 상승 종목 |
+| `GET` | `/api/dashboard/fundamentals` | 실적 턴어라운드·펀더멘탈(DART) |
+| `GET` | `/api/dashboard/disclosures/contracts?days=7` | 수주 공시(DART) |
+| `GET` | `/api/dashboard/holdings` | 내 보유종목(로그인) |
+| `GET` `PUT` `DELETE` | `/api/dashboard/watchlist[/<symbol>]` | 관심종목(로그인) |
+| `GET` | `/api/dashboard/conditions/presets` | 조건식 프리셋 |
+| `POST` | `/api/dashboard/conditions/backtest` | 조건식 백테스트 |
+
+```bash
+python3 -m unittest discover -s tests -t .   # Flask 등 backend 의존성 필요. 외부 API·PostgreSQL은 가짜로 대체하므로 실제 응답·SQL은 검증하지 않습니다
+```

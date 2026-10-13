@@ -15,6 +15,7 @@ from alpaca_test_api import alpaca_test_bp
 from api_keys import api_key_bp
 from broker_test_api import broker_test_bp
 from crypto import market_bp, trade_bp
+from dashboard import dashboard_bp, ensure_dashboard_tables
 from demo_seed import seed_demo_investors
 from members import ensure_member_tables, member_bp
 from openapi import open_api_bp
@@ -51,10 +52,12 @@ app.register_blueprint(api_key_bp)
 app.register_blueprint(broker_test_bp)
 app.register_blueprint(open_api_bp)
 app.register_blueprint(quant_bp)
+app.register_blueprint(dashboard_bp)
 app.register_blueprint(alternative_bp)
 
 ensure_tables()
 ensure_member_tables()
+ensure_dashboard_tables()
 seed_demo_investors()
 start_scheduler()
 
