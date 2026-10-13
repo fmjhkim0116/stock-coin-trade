@@ -198,11 +198,20 @@
     if (key === 'shield' && !showCat.loaded) { showCat.loaded = true; loadAccount(); }
   }
 
+  /* '급등주' 기준은 서버(ai_portfolio.SURGE_CRITERIA)가 한 곳에서 정의한다. 포착·켈리 기본 조건식이 모두 같은 값을 쓴다. */
+  async function loadSurgeRule() {
+    const { esc, getJson } = U(), box = $('#aiSurgeRule');
+    const { ok, body } = await getJson('/api/dashboard/ai/shield/rule');
+    if (!ok) { box.textContent = '기준을 불러오지 못했습니다.'; return; }
+    $('#kBuy').value = body.expr; $('#kSell').value = body.exit;
+    box.innerHTML = U().table([{ h: '#', f: r => r.n, cls: 'c' }, { h: '기준', f: r => `<b>${esc(r.label)}</b>` }, { h: '정의', f: r => esc(r.text) }, { h: '조건식', f: r => `<code>${esc(r.expr)}</code>` }],
+      body.criteria.map((c, i) => ({ ...c, n: i + 1 }))) + `<div class="dash-meta">${esc(body.note)} 청산(매도) 기본 조건: <code>${esc(body.exit)}</code></div>`;
+  }
+
   window.initAiPortfolio = u => {
     if (started) return;
     started = true; user = u;
-    $('#kBuy').value = 'close > hh(20) and volume > 2 * vma(20) and chg(5) > 0.05';
-    $('#kSell').value = 'close < ma(10)';
+    loadSurgeRule();
     document.querySelectorAll('[data-ai-cat]').forEach(b => b.addEventListener('click', () => showCat(b.dataset.aiCat, true)));
     $('#aiSniperRun').addEventListener('click', runSniper);
     $('#aiSurgeRun').addEventListener('click', runSurge);

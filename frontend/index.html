@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>대시보드 — EDUMGT 모의투자</title>
+  <title>EDUMGT 모의투자</title>
   <link rel="icon" href="/img/favicon.png">
   <style>
     @font-face { font-family:'Pretendard'; font-weight:400; font-display:swap; src:url('/fonts/Pretendard-Regular.woff2') format('woff2'); }
@@ -17,43 +17,47 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Pretendard','-apple-system','BlinkMacSystemFont','Segoe UI','Apple SD Gothic Neo','Malgun Gothic','sans-serif']}}}}</script>
   <link rel="stylesheet" href="/css/style.css?v=20260811-menu-fix-1">
-  <link rel="stylesheet" href="/css/dashboard.css?v=20261014-2">
 </head>
 <body class="min-h-screen">
 <div id="header-mount"></div>
-<main class="w-full px-4 py-6 dash-page">
+<main class="w-full px-4 py-6">
 
-  <header class="dash-head">
-    <div>
-      <h1>대시보드</h1>
-      <p>시장 현황 · 수급 · 실적/공시 · 내 종목 · 조건식 백테스트를 한 화면에서 확인합니다. 교육·연구용이며 투자 권유가 아닙니다.</p>
-    </div>
-    <nav class="dash-links" aria-label="바로가기">
-      <a href="/trade/stock.html">주식 실습</a><a href="/trade/order.html">코인 거래</a><a href="/trade/alternatives.html">대체자산</a><a href="/hts.html">HTS 시뮬레이션</a>
-    </nav>
-  </header>
+  <!-- Hero cards -->
+  <section class="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-3">
+    <article class="glow-card p-8 relative overflow-hidden">
+      <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(124,92,252,0.12) 0%,transparent 70%);pointer-events:none;"></div>
+      <div class="badge badge-gold mb-4" style="width:fit-content;">KOSPI · KOSDAQ</div>
+      <h1 class="text-[28px] font-black leading-tight" style="color:var(--fg);">주식 거래 실습</h1>
+      <p class="mt-3 text-sm leading-relaxed" style="color:var(--muted);">파이썬 기반 백엔드에서 시세/주문/포지션을 처리합니다.<br>KOSPI · KOSDAQ 가상 잔고로 매수/매도 실습을 진행할 수 있습니다.</p>
+      <button onclick="location.href='/trade/stock.html'" type="button" class="btn-gold mt-6" style="width:fit-content;padding:0.65rem 1.75rem;">주식 실습 시작 →</button>
+    </article>
+    <article class="glass-card p-8 relative overflow-hidden">
+      <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(124,92,252,0.07) 0%,transparent 70%);pointer-events:none;"></div>
+      <div class="badge badge-muted mb-4" style="width:fit-content;">Upbit KRW</div>
+      <h1 class="text-[28px] font-black leading-tight" style="color:var(--fg);">코인 거래 실습</h1>
+      <p class="mt-3 text-sm leading-relaxed" style="color:var(--muted);">업비트 기반 실시간 시세로 코인 실습을 제공합니다.<br>KRW 마켓 매수/매도 및 보유자산 관리를 사용할 수 있습니다.</p>
+      <button onclick="location.href='/trade/order.html'" type="button" class="btn-ghost mt-6" style="width:fit-content;padding:0.65rem 1.75rem;">코인 거래 시작 →</button>
+    </article>
+    <article class="glass-card p-8 relative overflow-hidden">
+      <div class="badge badge-muted mb-4" style="width:fit-content;">선물 · 옵션 · 금 · 은 · 부동산</div>
+      <h1 class="text-[28px] font-black leading-tight" style="color:var(--fg);">대체자산 거래 실습</h1>
+      <p class="mt-3 text-sm leading-relaxed" style="color:var(--muted);">선물·옵션·파생 ETN과 금·은, 부동산 지분을<br>1억 원 모의투자금으로 통합 관리합니다.</p>
+      <button onclick="location.href='/trade/alternatives.html'" type="button" class="btn-ghost mt-6" style="width:fit-content;padding:0.65rem 1.75rem;">대체자산 실습 시작 →</button>
+    </article>
+  </section>
 
-  <nav class="dash-tabs" role="tablist" aria-label="대시보드 메뉴">
-    <button type="button" role="tab" data-dash-tab="overview">지수 · 투데이 브리핑</button>
-    <button type="button" role="tab" data-dash-tab="flows">외국인·기관 Top15 · 시간외 상승</button>
-    <button type="button" role="tab" data-dash-tab="fundamentals">실적 턴어라운드 · 펀더멘탈 · 수주 공시</button>
-    <button type="button" role="tab" data-dash-tab="portfolio">보유종목 · 관심종목</button>
-    <button type="button" role="tab" data-dash-tab="conditions">조건식 · 신호 백테스트</button>
-    <button type="button" role="tab" data-dash-tab="ai">AI 포트폴리오 (Sniper · Shield)</button>
-  </nav>
+  <section class="mb-6">
+    <article class="glass-card p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between" style="border-color:rgba(41,98,255,.22);">
+      <div>
+        <div class="badge badge-muted mb-2" style="width:fit-content;">HTS 화면번호 연습</div>
+        <h2 class="text-xl font-black" style="color:var(--fg);">화면번호로 여는 HTS 시뮬레이션</h2>
+        <p class="mt-2 text-sm" style="color:var(--muted);">`0130` 관심종목, `0101` 주식현재가처럼 화면번호와 한글 검색을 직접 연습해 보세요.</p>
+      </div>
+      <button onclick="location.href='/hts.html'" type="button" class="btn-gold" style="white-space:nowrap;padding:.65rem 1.4rem;">HTS 열기 →</button>
+    </article>
+  </section>
 
-  <!-- 1. 지수 · 투데이 브리핑 -->
-  <section class="dash-panel" data-dash-panel="overview" hidden>
-    <div class="dash-card">
-      <div class="dash-card-head"><h2>주요 지수 · 환율 · 금리</h2><button type="button" class="dash-btn" data-refresh="overview">새로고침</button></div>
-      <div class="index-grid" id="indexGrid">불러오는 중…</div>
-      <div class="dash-meta" id="overviewMeta"></div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-head"><h2>투데이 브리핑</h2><span class="dash-tag">자동 요약 · 수치 기반</span></div>
-      <ul class="briefing" id="briefingList"><li>불러오는 중…</li></ul>
-      <div class="dash-meta" id="briefingMeta"></div>
-    </div>
+  <!-- 실시간 Top 10 카드 (2열) -->
   <section class="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-2">
 
     <!-- 주식 Top 10 -->
@@ -102,147 +106,6 @@
 
   </section>
 
-  </section>
-
-  <!-- 2. 외국인·기관 순매수 Top15 & 시간외 상승종목 -->
-  <section class="dash-panel" data-dash-panel="flows" hidden>
-    <div class="dash-card">
-      <div class="dash-card-head"><h2>외국인 · 기관 순매수 Top15</h2>
-        <label class="dash-inline">기간 <select id="flowDays"><option value="1">최근 1거래일</option><option value="3">3거래일</option><option value="5">5거래일</option><option value="10">10거래일</option></select></label>
-        <button type="button" class="dash-btn" data-refresh="flows">새로고침</button></div>
-      <div id="flowsStatus" class="dash-empty">불러오는 중…</div>
-      <div class="dash-cols" id="flowsTables" hidden>
-        <div><h3>외국인 순매수</h3><div id="flowForeign"></div></div>
-        <div><h3>기관 순매수</h3><div id="flowInstitution"></div></div>
-        <div><h3>외국인+기관 동반 순매수</h3><div id="flowBoth"></div></div>
-      </div>
-      <div class="dash-meta" id="flowsMeta"></div>
-      <details class="dash-more" id="flowAdmin" hidden><summary>관리자: 수급 CSV 업로드</summary>
-        <p>투자자별 매매동향 CSV(<code>종목코드,종목명,일자,외국인,기관[,개인]</code>)를 올리면 순위에 반영됩니다. 1MB 이하, 같은 종목·일자는 덮어씁니다.</p>
-        <input type="file" id="flowFile" accept=".csv,text/csv"> <button type="button" class="dash-btn" id="flowUpload">업로드</button> <span id="flowUploadMsg" class="dash-meta"></span></details>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-head"><h2>시간외 상승종목</h2><button type="button" class="dash-btn" data-refresh="overtime">새로고침</button></div>
-      <div id="overtimeBody" class="dash-empty">불러오는 중…</div>
-      <div class="dash-meta" id="overtimeMeta"></div>
-    </div>
-  </section>
-
-  <!-- 3. 실적 턴어라운드 · 펀더멘탈 · 수주 공시 -->
-  <section class="dash-panel" data-dash-panel="fundamentals" hidden>
-    <div class="dash-card">
-      <div class="dash-card-head"><h2>실적 턴어라운드 · 펀더멘탈</h2><button type="button" class="dash-btn" data-refresh="fundamentals">새로고침</button></div>
-      <div id="fundBody" class="dash-empty">불러오는 중…</div>
-      <div class="dash-meta" id="fundMeta"></div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-head"><h2>수주 공시 (단일판매·공급계약)</h2>
-        <label class="dash-inline">기간 <select id="contractDays"><option value="3">3일</option><option value="7" selected>7일</option><option value="14">14일</option><option value="30">30일</option></select></label>
-        <button type="button" class="dash-btn" data-refresh="contracts">새로고침</button></div>
-      <div id="contractBody" class="dash-empty">불러오는 중…</div>
-      <div class="dash-meta" id="contractMeta"></div>
-    </div>
-  </section>
-
-  <!-- 4. 보유종목 · 관심종목 -->
-  <section class="dash-panel" data-dash-panel="portfolio" hidden>
-    <div class="dash-card">
-      <div class="dash-card-head"><h2>보유종목</h2><button type="button" class="dash-btn" data-refresh="portfolio">새로고침</button></div>
-      <div id="holdingsBody" class="dash-empty">불러오는 중…</div>
-      <div class="dash-meta" id="holdingsMeta"></div>
-    </div>
-    <div class="dash-card">
-      <div class="dash-card-head"><h2>관심종목</h2>
-        <form id="watchForm" class="dash-inline" autocomplete="off"><input id="watchSymbol" inputmode="numeric" maxlength="6" placeholder="종목코드 6자리" aria-label="관심종목 추가"><button class="dash-btn" type="submit">추가</button></form></div>
-      <div id="watchBody" class="dash-empty">불러오는 중…</div>
-      <div class="dash-meta" id="watchMeta"></div>
-    </div>
-  </section>
-
-  <!-- 5. 조건식 · 신호 백테스트 -->
-  <section class="dash-panel" data-dash-panel="conditions" hidden>
-    <div class="dash-card">
-      <div class="dash-card-head"><h2>조건식 만들기</h2><span class="dash-tag">신호는 다음 거래일 시가 체결 가정</span></div>
-      <div class="cond-form">
-        <label>프리셋<select id="condPreset"><option value="">직접 입력</option></select></label>
-        <label>종목코드<input id="condSymbol" value="005930" maxlength="20"></label>
-        <label>가격 데이터<select id="condSource"><option value="db">내부 DB(market_data)</option><option value="naver">Naver 일봉 1년</option></select></label>
-        <label class="wide">매수 조건식<textarea id="condBuy" rows="2" spellcheck="false" placeholder="예: cross_up(ma(5), ma(20))"></textarea></label>
-        <label class="wide">매도 조건식 (선택)<textarea id="condSell" rows="2" spellcheck="false" placeholder="예: cross_down(ma(5), ma(20))"></textarea></label>
-        <label>최대 보유일<input id="condHold" type="number" min="0" max="250" value="20"></label>
-        <label>손절 %<input id="condStop" type="number" min="0" max="90" step="0.5" placeholder="예: 8"></label>
-        <label>익절 %<input id="condTake" type="number" min="0" max="500" step="0.5" placeholder="예: 20"></label>
-        <label>수수료 %<input id="condFee" type="number" min="0" max="2" step="0.005" value="0.015"></label>
-        <label>슬리피지 %<input id="condSlip" type="number" min="0" max="2" step="0.01" value="0.05"></label>
-      </div>
-      <div class="cond-actions"><button type="button" class="dash-btn primary" id="condRun">백테스트 실행</button><button type="button" class="dash-btn" id="condSave">조건 저장(이 브라우저)</button><span id="condSaved" class="cond-saved"></span></div>
-      <details class="dash-more"><summary>조건식 문법 보기</summary>
-        <p><b>가격</b> open high low close volume · <b>수급</b> foreign_net inst_net(업로드된 종목만) · <b>지표</b> ma(n) ema(n) rsi(n) vma(n) atr(n) hh(n) ll(n) chg(n) sma(x, n) ref(x, k) exit_score()<br>
-        <b>보조</b> cross_up(a, b) cross_down(a, b) abs max min · <b>연산</b> + - * / &lt; &lt;= &gt; &gt;= == != and or not<br>
-        hh(n)/ll(n)은 <i>오늘을 제외한</i> 직전 n일 최고가/최저가입니다. 예) <code>close &gt; hh(20) and volume &gt; 2 * vma(20)</code></p></details>
-      <div id="condResult" class="dash-empty">조건을 입력하고 실행하세요.</div>
-    </div>
-  </section>
-
-  <!-- 6. AI 포트폴리오: Sniper(효율적 투자선) · Shield(켈리공식) -->
-  <section class="dash-panel" data-dash-panel="ai" hidden>
-    <nav class="ai-cats" role="tablist" aria-label="AI 포트폴리오 종류">
-      <button type="button" role="tab" data-ai-cat="sniper"><b>AI Sniper 포트폴리오</b><span>효율적 투자선 · 시장 방어 + 연 8~10% 목표</span></button>
-      <button type="button" role="tab" data-ai-cat="shield"><b>AI Shield 포트폴리오</b><span>켈리 공식 · 급등주 베팅 + 연 50% 이상 목표</span></button>
-    </nav>
-    <div class="dash-more ai-warn">목표 수익률은 <b>목표일 뿐 보장이 아닙니다.</b> 모든 계산은 과거 데이터 기반 추정이며, 'AI 클로드' 해설은 서버가 계산한 숫자를 풀어 쓴 글입니다. 교육·연구용이며 투자 권유가 아닙니다.</div>
-
-    <!-- AI Sniper -->
-    <div data-ai-pane="sniper" hidden>
-      <div class="dash-card">
-        <div class="dash-card-head"><h2>1. 상관관계가 낮은 자산 찾기 → 효율적 투자선</h2><span class="dash-tag">목표: 시장 방어 + 연 8~10%</span></div>
-        <div class="cond-form">
-          <label class="wide">종목코드 (3~15개, 쉼표·공백 구분, 비우면 등록 종목 + 내 보유·관심종목)<textarea id="aiSymbols" rows="2" spellcheck="false" placeholder="예: 005930, 000660, 069500"></textarea></label>
-          <label class="wide">기준 바구니 (선택 — 내가 이미 가진 종목. 이 바구니와 상관이 낮은 종목을 찾습니다)<input id="aiBase" placeholder="예: 005930, 000660"></label>
-          <label>가격 데이터<select id="aiSource"><option value="naver">Naver 일봉(약 2년)</option><option value="db">내부 DB(market_data)</option></select></label>
-          <label>종목당 최대 비중 %<input id="aiMaxW" type="number" min="10" max="100" value="40"></label>
-          <label>목표 수익 하한 %<input id="aiLo" type="number" step="0.5" value="8"></label>
-          <label>목표 수익 상한 %<input id="aiHi" type="number" step="0.5" value="10"></label>
-          <label>무위험 수익률 %<input id="aiRf" type="number" step="0.1" min="0" max="20" value="3"></label>
-          <label>기대수익 보정(평균 회귀) %<input id="aiShrink" type="number" min="0" max="100" value="50"></label>
-        </div>
-        <div class="cond-actions"><button type="button" class="dash-btn primary" id="aiSniperRun">AI 클로드: 상관관계 낮은 자산 찾기</button></div>
-        <div id="aiSniperResult" class="dash-empty">종목을 입력하고 실행하세요. 입력하지 않으면 등록 종목으로 계산합니다.</div>
-      </div>
-    </div>
-
-    <!-- AI Shield: 켈리공식 -->
-    <div data-ai-pane="shield" hidden>
-      <div class="dash-card">
-        <div class="dash-card-head"><h2>2-1. 급등주 포착</h2><button type="button" class="dash-btn" id="aiSurgeRun">급등주 포착</button></div>
-        <div id="aiSurgeResult" class="dash-empty">20일 고가 돌파 + 거래량 2배 + 5일 +5% 조건을 오늘 충족한 종목을 찾습니다.</div>
-      </div>
-      <div class="dash-card">
-        <div class="dash-card-head"><h2>2-2. 켈리 공식 — 최적 베팅 비율</h2><span class="dash-tag">f* = 승률 − (1−승률) ÷ 손익비</span></div>
-        <div class="cond-form">
-          <label>투자금 (원)<input id="kCapital" type="number" min="0" step="100000" value="10000000"></label>
-          <label>켈리 배수<select id="kFraction"><option value="0.25">¼ 켈리 (보수적)</option><option value="0.5" selected>½ 켈리 (권장)</option><option value="1">풀 켈리 (변동 매우 큼)</option></select></label>
-          <label>종목당 한도 %<input id="kCap" type="number" min="1" max="100" value="25"></label>
-          <label>총 베팅 한도 %<input id="kTotal" type="number" min="1" max="100" value="100"></label>
-          <label class="wide">대상 종목 (비우면 등록 종목 + 내 보유·관심종목 — 이 종목들의 과거 신호 거래를 합쳐 승률·손익비를 추정)<input id="kSymbols" placeholder="예: 005930, 000660, 247540"></label>
-          <label class="wide">매수 조건식<textarea id="kBuy" rows="2" spellcheck="false"></textarea></label>
-          <label class="wide">매도 조건식<input id="kSell" spellcheck="false"></label>
-          <label>손절 %<input id="kStop" type="number" min="0" max="90" step="0.5" value="8"></label>
-          <label>최대 보유일<input id="kHold" type="number" min="0" max="250" value="20"></label>
-        </div>
-        <div class="cond-actions"><button type="button" class="dash-btn primary" id="aiKellyRun">AI 클로드: 최적 베팅 비율 계산</button></div>
-        <div id="aiKellyResult" class="dash-empty">대상 종목의 과거 신호 거래로 승률·손익비를 구한 뒤 켈리 비율을 계산합니다. 표본이 부족하면 베팅을 제안하지 않습니다.</div>
-        <details class="dash-more"><summary>승률·손익비를 직접 입력해 계산하기</summary>
-          <div class="cond-form"><label>승률 %<input id="mP" type="number" min="0" max="100" step="0.5" value="55"></label><label>손익비 (평균 수익 ÷ 평균 손실)<input id="mB" type="number" min="0.01" step="0.1" value="1.5"></label></div>
-          <div class="cond-actions"><button type="button" class="dash-btn" id="aiManualRun">직접 계산</button></div><div id="aiManualResult"></div></details>
-      </div>
-      <div class="dash-card">
-        <div class="dash-card-head"><h2>2-3. 월 1회 리밸런싱 — 늘어난 수익을 안전한 곳으로</h2><span class="dash-tag">모의 장부 · 실제 주문 없음</span></div>
-        <div id="aiShieldAccount" class="dash-empty">불러오는 중…</div>
-      </div>
-    </div>
-  </section>
-
 </main>
 <footer id="site-footer">
   <div class="w-full px-4 py-3 flex items-center justify-between">
@@ -252,12 +115,9 @@
 </footer>
 <script src="/js/config.js"></script>
 <script src="/js/common.js?v=20260813-common-menu-3"></script>
-<script src="/js/dashboard.js?v=20261014-2"></script>
-<script src="/js/dashboard-ai.js?v=20261014-1"></script>
 <script>
 (async () => {
-  const user = await initPage();
-  if (window.initDashboard) window.initDashboard(user);
+  await initPage();
 
   /* ── 코인 Top 10 (업비트 WebSocket) ────────────────────────── */
   const cryptoRes = await apiFetch('/api/crypto/market-list');

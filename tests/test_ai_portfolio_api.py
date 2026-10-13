@@ -26,7 +26,7 @@ def _bigint_sqlite(type_, compiler, **kw):
     return "INTEGER"
 
 
-def bars_from_returns(rets, start=date(2025, 1, 1), vol=1000.0):
+def bars_from_returns(rets, start=date(2025, 1, 1), vol=2e7):
     out, close = [], 100.0
     for i, r in enumerate(rets):
         prev = close
@@ -100,16 +100,36 @@ class SniperTests(Base):
 
 
 class ShieldTests(Base):
-    def surge_bars(self, surge_now):
+    def surge_bars(self, surge_now, **tweak):
         rets = [0.0] * 60
-        if surge_now:
-            rets += [0.01, 0.02, 0.02, 0.03, 0.03]
-        else:
-            rets += [0.0] * 5
+        rets += [0.01, 0.02, 0.02, 0.03, 0.03] if surge_now else [0.0] * 5
         bars = bars_from_returns(rets)
         if surge_now:
-            bars[-1]["volume"] = 5000.0
+            bars[-1]["volume"] = tweak.get("volume", 6e7)
         return bars
+
+    def test_surge_rule_endpoint_and_expression_limits(self):
+        body = self.client.get("/api/dashboard/ai/shield/rule").get_json()
+        self.assertEqual(len(body["criteria"]), 6)
+        self.assertEqual(body["expr"], " and ".join(c["expr"] for c in body["criteria"]))
+        self.assertLessEqual(len(body["expr"]), ai_portfolio.condition_lab.MAX_EXPR_LEN)
+        ai_portfolio.condition_lab.parse_expression(body["expr"])  # within node/length limits
+
+    def test_each_surge_criterion_blocks_a_candidate(self):
+        def fires(bars):
+            return ai_portfolio.condition_lab.evaluate(bars, None, ai_portfolio.SURGE_EXPR)[-1]
+        self.assertTrue(fires(self.surge_bars(True)))
+        self.assertFalse(fires(self.surge_bars(True, volume=3e7)))                       # volume only 1.5x the average
+        weak = bars_from_returns([0.0] * 60 + [0.0, 0.01, 0.01, 0.02, 0.02]); weak[-1]["volume"] = 6e7
+        self.assertFalse(fires(weak))                                                    # 5-day gain ~6% < 8%
+        hot = bars_from_returns([0.0] * 60 + [0.05, 0.08, 0.08, 0.09, 0.08]); hot[-1]["volume"] = 6e7
+        self.assertFalse(fires(hot))                                                     # 5-day gain > 40% (overheated)
+        limit_up = bars_from_returns([0.0] * 60 + [0.0, 0.0, 0.0, 0.0, 0.30]); limit_up[-1]["volume"] = 6e7
+        self.assertFalse(fires(limit_up))                                                # limit-up day: cannot be bought
+        illiquid = bars_from_returns([0.0] * 60 + [0.01, 0.02, 0.02, 0.03, 0.03], vol=1000.0); illiquid[-1]["volume"] = 3000.0
+        self.assertFalse(fires(illiquid))                                                # turnover far below 1 billion KRW
+        downtrend = bars_from_returns([-0.01] * 40 + [0.0] * 20 + [0.01, 0.02, 0.02, 0.03, 0.03]); downtrend[-1]["volume"] = 6e7
+        self.assertFalse(fires(downtrend))                                               # still below the 60-day average
 
     def test_candidates(self):
         self.data = {"000001": self.surge_bars(True), "000002": self.surge_bars(False)}

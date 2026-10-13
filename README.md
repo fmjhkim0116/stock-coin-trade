@@ -415,9 +415,9 @@ curl http://localhost:3000/api/alpaca-test/paper/account
 python3 -m unittest discover -s tests -t .   # tests/test_exit_api.py는 Flask가 필요하며 DB 계층을 대체해 SQL은 검증하지 않습니다
 ```
 
-## 대시보드 (시작 화면, `/index.html`)
+## 퀀트 대시보드 (`/dashboard.html`)
 
-시작 화면은 5개 탭의 대시보드입니다. `?tab=overview|flows|fundamentals|portfolio|conditions`로 탭을 바로 열 수 있습니다.
+`/index.html`은 기존 시작 화면 그대로이고, 퀀트 대시보드는 `/dashboard.html`(메뉴의 '퀀트 대시보드')입니다. 6개 탭으로 구성되며 `?tab=overview|flows|fundamentals|portfolio|conditions|ai`로 탭을 바로 열 수 있습니다.
 
 | 탭 | 내용 | 데이터 출처 · 조건 |
 |---|---|---|
@@ -447,12 +447,25 @@ python3 -m unittest discover -s tests -t .   # tests/test_exit_api.py는 Flask�
 | **AI Sniper** — 효율적 투자선 (목표: 시장 방어 + 연 8~10%) | 상관관계가 낮은 자산 찾기, 최소 변동성/최대 샤프/목표 수익대 포트폴리오 | 과거 일간 수익률의 상관행렬·공분산, 몬테카를로 효율적 투자선(종목당 최대 비중 적용). 기대수익은 종목 평균으로 보정(shrink)하고, 데이터가 목표 수익대를 허용하지 않으면 그대로 '만들 수 없음'으로 표시합니다 |
 | **AI Shield** — 켈리공식 (목표: 급등주 베팅 + 연 50% 이상) | 급등주 포착, 최적 베팅 비율 계산, **월 1회 리밸런싱 버튼**(켈리공식 카테고리 안) | 선택 종목들의 과거 신호 거래를 합쳐 승률·손익비 추정 → 승률 95% 신뢰하한으로 켈리 비율 계산 → 켈리 배수·종목당/총 한도 적용. 표본 20건 미만·기대값 ≤ 0이면 베팅을 제안하지 않습니다. 리밸런싱은 수익 기준선(최고 이익) 초과분의 일부를 안전 계좌로 옮기는 **모의 장부**이며 실제 주문·이체는 없습니다(월 1회, 서버가 강제) |
 
+**'AI가 포착한 급등주' 표준 기준** — 아래 6개를 모두 충족해야 합니다(`ai_portfolio.SURGE_CRITERIA` 한 곳에서 정의, 포착·켈리 계산·화면이 같은 값을 사용).
+
+| # | 기준 | 정의 |
+|---|---|---|
+| 1 | 가격 돌파 | 종가 > 직전 20거래일 최고가 |
+| 2 | 거래량 급증 | 거래량 > 20일 평균의 2배 |
+| 3 | 단기 모멘텀 | 5일 수익률 +8% 초과 ~ +40% 미만 |
+| 4 | 추세 필터 | 종가 > 60일 이동평균 |
+| 5 | 상한가 제외 | 당일 상승률 29% 미만 |
+| 6 | 유동성 | 당일 거래대금 10억 원 이상 |
+
+경험적 정의이며 수익을 보장하지 않습니다. 조건이 까다로워 과거 신호가 20건 미만이면 켈리 계산은 베팅을 제안하지 않습니다.
+
 'AI 클로드 해설'은 서버가 계산한 결과 JSON만 근거로 Claude가 쓴 글입니다(`ANTHROPIC_API_KEY` 필요, 로그인 필요). 숫자의 출처는 항상 서버 계산이며, 목표 수익률은 보장이 아닙니다.
 
 | Method | Endpoint | 설명 |
 |---|---|---|
 | `POST` | `/api/dashboard/ai/sniper` | 상관관계 + 효율적 투자선 |
-| `GET` | `/api/dashboard/ai/shield/candidates` | 급등주 포착 |
+| `GET` | `/api/dashboard/ai/shield/rule` · `/candidates` | 급등주 기준 · 오늘 기준 충족 종목 |
 | `POST` | `/api/dashboard/ai/shield/kelly` | 켈리 베팅 비율(`mode`: `pooled` / `manual`) |
 | `GET` `PUT` | `/api/dashboard/ai/shield/account` | Shield 모의 장부 조회/생성(로그인) |
 | `POST` | `/api/dashboard/ai/shield/rebalance/preview` · `/rebalance` | 월 1회 리밸런싱 미리보기/실행(로그인) |
@@ -460,7 +473,7 @@ python3 -m unittest discover -s tests -t .   # tests/test_exit_api.py는 Flask�
 
 ### 실행
 
-프론트엔드는 Nginx(컨테이너 80 → 호스트 **3000**)가, API는 Flask(8200)가 제공합니다. 대시보드는 `http://127.0.0.1:3000/` 입니다. 코드를 받은 뒤에는 이미지를 다시 빌드해야 합니다(`docker compose up -d --build`).
+프론트엔드는 Nginx(컨테이너 80 → 호스트 **3000**)가, API는 Flask(8200)가 제공합니다. 퀀트 대시보드는 `http://127.0.0.1:3000/dashboard.html` 입니다. 코드를 받은 뒤에는 이미지를 다시 빌드해야 합니다(`docker compose up -d --build`).
 
 ```bash
 python3 -m unittest discover -s tests -t .   # Flask·numpy 등 backend 의존성 필요. 외부 API·PostgreSQL·MariaDB DDL은 가짜/SQLite로 대체하므로 실제 응답·SQL은 검증하지 않습니다

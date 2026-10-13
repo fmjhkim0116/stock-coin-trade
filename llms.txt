@@ -33,7 +33,8 @@
 
 ## 프론트엔드 (frontend/)
 
-- [index.html](frontend/index.html): 시작 화면 = 5탭 대시보드(지수·브리핑 / 수급·시간외 / 실적·공시 / 보유·관심 / 조건식 백테스트), 로직은 [js/dashboard.js](frontend/js/dashboard.js)
+- [index.html](frontend/index.html): 대시보드(기존 시작 화면)
+- [dashboard.html](frontend/dashboard.html): 퀀트 대시보드 6탭(지수·브리핑 / 수급·시간외 / 실적·공시 / 보유·관심 / 조건식 백테스트 / AI Sniper·Shield), 로직은 [js/dashboard.js](frontend/js/dashboard.js)·[js/dashboard-ai.js](frontend/js/dashboard-ai.js)
 - [trade/](frontend/trade/): 코인·주식·대체자산 모의거래 화면
 - [learning/](frontend/learning/): TradingView(Pine), KB증권, 한국투자증권(KIS), Alpaca 실전연습 학습 페이지
 - [broker-api-test.html](frontend/broker-api-test.html): 증권사 시세 테스트 UI

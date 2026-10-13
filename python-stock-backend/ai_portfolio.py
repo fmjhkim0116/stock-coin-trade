@@ -25,7 +25,17 @@ ai_portfolio_bp = Blueprint("ai_portfolio", __name__, url_prefix="/api/dashboard
 
 SYMBOL_RE = re.compile(r"^[0-9A-Z_\-]{1,12}$")
 MAX_SYMBOLS = 15
-SURGE_EXPR = "close > hh(20) and volume > 2 * vma(20) and chg(5) > 0.05"
+# 'AI가 포착한 급등주'의 표준 정의: 아래 6개 기준을 모두 충족해야 한다. 화면의 기준표·기본 매수 조건식·켈리의 과거 신호가
+# 모두 이 한 곳에서 나오므로, 기준을 바꾸면 포착과 베팅 계산이 함께 바뀐다.
+SURGE_CRITERIA = [
+    {"key": "breakout", "label": "가격 돌파", "text": "종가가 직전 20거래일 최고가를 넘음", "expr": "close > hh(20)"},
+    {"key": "volume", "label": "거래량 급증", "text": "거래량이 20일 평균의 2배 초과", "expr": "volume > 2 * vma(20)"},
+    {"key": "momentum", "label": "단기 모멘텀", "text": "5일 수익률 +8% 초과 ~ +40% 미만 (약하면 급등이 아니고, 과열이면 추격 위험)", "expr": "chg(5) > 0.08 and chg(5) < 0.4"},
+    {"key": "trend", "label": "추세 필터", "text": "종가가 60일 이동평균 위 (하락 추세 중 일회성 반등 제외)", "expr": "close > ma(60)"},
+    {"key": "limit", "label": "상한가 제외", "text": "당일 상승률 29% 미만 (상한가는 살 수 없음)", "expr": "close / ref(close, 1) < 1.29"},
+    {"key": "liquidity", "label": "유동성", "text": "당일 거래대금 10억 원 이상 (체결 가능한 종목만)", "expr": "close * volume > 1000000000"},
+]
+SURGE_EXPR = " and ".join(c["expr"] for c in SURGE_CRITERIA)
 SURGE_EXIT = "close < ma(10)"
 EXPLAIN_MODEL = os.environ.get("AI_EXPLAIN_MODEL", "claude-haiku-4-5-20251001")
 
@@ -139,6 +149,12 @@ def _surge_metrics(bars):
             "price": closes[-1], "date": bars[-1]["date"]}
 
 
+@ai_portfolio_bp.get("/shield/rule")
+def shield_rule():
+    return jsonify({"criteria": SURGE_CRITERIA, "expr": SURGE_EXPR, "exit": SURGE_EXIT,
+                    "note": "표준 기준은 경험적 정의이며 수익을 보장하지 않습니다. 조건이 까다로워 과거 신호가 20건 미만이면 켈리 계산은 베팅을 제안하지 않습니다."})
+
+
 @ai_portfolio_bp.get("/shield/candidates")
 def shield_candidates():
     try:
@@ -155,8 +171,8 @@ def shield_candidates():
                     rows.append({"symbol": symbol, "name": _name(symbol), **metrics})
         rows.sort(key=lambda r: r["chg5"], reverse=True)
         return jsonify({"asOf": _now(), "rule": SURGE_EXPR, "checked": len(bars), "failed": failed, "rows": rows,
-                        "note": "'급등주'는 20일 고가 돌파 + 거래량 2배 + 5일 +5% 조건을 마지막 거래일에 충족한 종목입니다. "
-                                "이미 오른 종목이므로 추격 매수 위험이 있고, 조건 충족이 상승을 보장하지 않습니다."})
+                        "note": "'급등주'는 위 6개 기준을 마지막 거래일에 모두 충족한 종목입니다. 이미 오른 종목이므로 추격 매수 위험이 있고, "
+                                "조건 충족이 이후 상승을 보장하지 않습니다."})
     except (portfolio_lab.PortfolioError, condition_lab.ConditionError) as exc:
         return _error(exc)
 
