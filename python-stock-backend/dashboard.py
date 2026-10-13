@@ -53,17 +53,44 @@ def _now():
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
-def ensure_dashboard_tables():
-    statement = """CREATE TABLE IF NOT EXISTS stock_watchlist (
+DASHBOARD_DDL = (
+    """CREATE TABLE IF NOT EXISTS stock_watchlist (
       stock_watchlist_id BIGINT AUTO_INCREMENT PRIMARY KEY,
       member_id BIGINT NOT NULL,
       symbol VARCHAR(20) NOT NULL,
       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
       UNIQUE KEY uq_stock_watchlist_member_symbol (member_id, symbol),
       CONSTRAINT fk_stock_watchlist_member FOREIGN KEY (member_id) REFERENCES member(member_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"""
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
+    """CREATE TABLE IF NOT EXISTS shield_account (
+      member_id BIGINT NOT NULL PRIMARY KEY,
+      risky BIGINT NOT NULL,
+      safe BIGINT NOT NULL DEFAULT 0,
+      baseline BIGINT NOT NULL,
+      last_rebalance_month VARCHAR(7) NULL,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      CONSTRAINT fk_shield_account_member FOREIGN KEY (member_id) REFERENCES member(member_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
+    """CREATE TABLE IF NOT EXISTS shield_ledger (
+      shield_ledger_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+      member_id BIGINT NOT NULL,
+      month VARCHAR(7) NOT NULL,
+      risky_before BIGINT NOT NULL,
+      gain BIGINT NOT NULL,
+      swept BIGINT NOT NULL,
+      risky_after BIGINT NOT NULL,
+      safe_after BIGINT NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      KEY idx_shield_ledger_member (member_id, created_at),
+      CONSTRAINT fk_shield_ledger_member FOREIGN KEY (member_id) REFERENCES member(member_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""",
+)
+
+
+def ensure_dashboard_tables():
     with engine.begin() as conn:
-        conn.execute(text(statement))
+        for statement in DASHBOARD_DDL:
+            conn.execute(text(statement))
 
 
 # ── 1. indices & briefing ─────────────────────────────────────────────────────

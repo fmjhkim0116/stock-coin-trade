@@ -213,6 +213,33 @@ CREATE TABLE IF NOT EXISTS `stock_watchlist` (
   CONSTRAINT `FK_stock_watchlist_member` FOREIGN KEY (`member_id`) REFERENCES `member` (`member_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 테이블 mockinv.shield_account / shield_ledger 구조 내보내기 (AI Shield 모의 장부)
+CREATE TABLE IF NOT EXISTS `shield_account` (
+  `member_id` bigint(20) NOT NULL,
+  `risky` bigint(20) NOT NULL,
+  `safe` bigint(20) NOT NULL DEFAULT 0,
+  `baseline` bigint(20) NOT NULL,
+  `last_rebalance_month` varchar(7) DEFAULT NULL,
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`member_id`),
+  CONSTRAINT `FK_shield_account_member` FOREIGN KEY (`member_id`) REFERENCES `member` (`member_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `shield_ledger` (
+  `shield_ledger_id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `member_id` bigint(20) NOT NULL,
+  `month` varchar(7) NOT NULL,
+  `risky_before` bigint(20) NOT NULL,
+  `gain` bigint(20) NOT NULL,
+  `swept` bigint(20) NOT NULL,
+  `risky_after` bigint(20) NOT NULL,
+  `safe_after` bigint(20) NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`shield_ledger_id`),
+  KEY `idx_shield_ledger_member` (`member_id`,`created_at`),
+  CONSTRAINT `FK_shield_ledger_member` FOREIGN KEY (`member_id`) REFERENCES `member` (`member_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- 테이블 mockinv.stock_position 구조 내보내기
 CREATE TABLE IF NOT EXISTS `stock_position` (
   `stock_position_id` bigint(20) NOT NULL AUTO_INCREMENT,

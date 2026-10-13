@@ -17,7 +17,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Pretendard','-apple-system','BlinkMacSystemFont','Segoe UI','Apple SD Gothic Neo','Malgun Gothic','sans-serif']}}}}</script>
   <link rel="stylesheet" href="/css/style.css?v=20260811-menu-fix-1">
-  <link rel="stylesheet" href="/css/dashboard.css?v=20261014-1">
+  <link rel="stylesheet" href="/css/dashboard.css?v=20261014-2">
 </head>
 <body class="min-h-screen">
 <div id="header-mount"></div>
@@ -39,6 +39,7 @@
     <button type="button" role="tab" data-dash-tab="fundamentals">실적 턴어라운드 · 펀더멘탈 · 수주 공시</button>
     <button type="button" role="tab" data-dash-tab="portfolio">보유종목 · 관심종목</button>
     <button type="button" role="tab" data-dash-tab="conditions">조건식 · 신호 백테스트</button>
+    <button type="button" role="tab" data-dash-tab="ai">AI 포트폴리오 (Sniper · Shield)</button>
   </nav>
 
   <!-- 1. 지수 · 투데이 브리핑 -->
@@ -183,6 +184,65 @@
     </div>
   </section>
 
+  <!-- 6. AI 포트폴리오: Sniper(효율적 투자선) · Shield(켈리공식) -->
+  <section class="dash-panel" data-dash-panel="ai" hidden>
+    <nav class="ai-cats" role="tablist" aria-label="AI 포트폴리오 종류">
+      <button type="button" role="tab" data-ai-cat="sniper"><b>AI Sniper 포트폴리오</b><span>효율적 투자선 · 시장 방어 + 연 8~10% 목표</span></button>
+      <button type="button" role="tab" data-ai-cat="shield"><b>AI Shield 포트폴리오</b><span>켈리 공식 · 급등주 베팅 + 연 50% 이상 목표</span></button>
+    </nav>
+    <div class="dash-more ai-warn">목표 수익률은 <b>목표일 뿐 보장이 아닙니다.</b> 모든 계산은 과거 데이터 기반 추정이며, 'AI 클로드' 해설은 서버가 계산한 숫자를 풀어 쓴 글입니다. 교육·연구용이며 투자 권유가 아닙니다.</div>
+
+    <!-- AI Sniper -->
+    <div data-ai-pane="sniper" hidden>
+      <div class="dash-card">
+        <div class="dash-card-head"><h2>1. 상관관계가 낮은 자산 찾기 → 효율적 투자선</h2><span class="dash-tag">목표: 시장 방어 + 연 8~10%</span></div>
+        <div class="cond-form">
+          <label class="wide">종목코드 (3~15개, 쉼표·공백 구분, 비우면 등록 종목 + 내 보유·관심종목)<textarea id="aiSymbols" rows="2" spellcheck="false" placeholder="예: 005930, 000660, 069500"></textarea></label>
+          <label class="wide">기준 바구니 (선택 — 내가 이미 가진 종목. 이 바구니와 상관이 낮은 종목을 찾습니다)<input id="aiBase" placeholder="예: 005930, 000660"></label>
+          <label>가격 데이터<select id="aiSource"><option value="naver">Naver 일봉(약 2년)</option><option value="db">내부 DB(market_data)</option></select></label>
+          <label>종목당 최대 비중 %<input id="aiMaxW" type="number" min="10" max="100" value="40"></label>
+          <label>목표 수익 하한 %<input id="aiLo" type="number" step="0.5" value="8"></label>
+          <label>목표 수익 상한 %<input id="aiHi" type="number" step="0.5" value="10"></label>
+          <label>무위험 수익률 %<input id="aiRf" type="number" step="0.1" min="0" max="20" value="3"></label>
+          <label>기대수익 보정(평균 회귀) %<input id="aiShrink" type="number" min="0" max="100" value="50"></label>
+        </div>
+        <div class="cond-actions"><button type="button" class="dash-btn primary" id="aiSniperRun">AI 클로드: 상관관계 낮은 자산 찾기</button></div>
+        <div id="aiSniperResult" class="dash-empty">종목을 입력하고 실행하세요. 입력하지 않으면 등록 종목으로 계산합니다.</div>
+      </div>
+    </div>
+
+    <!-- AI Shield: 켈리공식 -->
+    <div data-ai-pane="shield" hidden>
+      <div class="dash-card">
+        <div class="dash-card-head"><h2>2-1. 급등주 포착</h2><button type="button" class="dash-btn" id="aiSurgeRun">급등주 포착</button></div>
+        <div id="aiSurgeResult" class="dash-empty">20일 고가 돌파 + 거래량 2배 + 5일 +5% 조건을 오늘 충족한 종목을 찾습니다.</div>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-head"><h2>2-2. 켈리 공식 — 최적 베팅 비율</h2><span class="dash-tag">f* = 승률 − (1−승률) ÷ 손익비</span></div>
+        <div class="cond-form">
+          <label>투자금 (원)<input id="kCapital" type="number" min="0" step="100000" value="10000000"></label>
+          <label>켈리 배수<select id="kFraction"><option value="0.25">¼ 켈리 (보수적)</option><option value="0.5" selected>½ 켈리 (권장)</option><option value="1">풀 켈리 (변동 매우 큼)</option></select></label>
+          <label>종목당 한도 %<input id="kCap" type="number" min="1" max="100" value="25"></label>
+          <label>총 베팅 한도 %<input id="kTotal" type="number" min="1" max="100" value="100"></label>
+          <label class="wide">대상 종목 (비우면 등록 종목 + 내 보유·관심종목 — 이 종목들의 과거 신호 거래를 합쳐 승률·손익비를 추정)<input id="kSymbols" placeholder="예: 005930, 000660, 247540"></label>
+          <label class="wide">매수 조건식<textarea id="kBuy" rows="2" spellcheck="false"></textarea></label>
+          <label class="wide">매도 조건식<input id="kSell" spellcheck="false"></label>
+          <label>손절 %<input id="kStop" type="number" min="0" max="90" step="0.5" value="8"></label>
+          <label>최대 보유일<input id="kHold" type="number" min="0" max="250" value="20"></label>
+        </div>
+        <div class="cond-actions"><button type="button" class="dash-btn primary" id="aiKellyRun">AI 클로드: 최적 베팅 비율 계산</button></div>
+        <div id="aiKellyResult" class="dash-empty">대상 종목의 과거 신호 거래로 승률·손익비를 구한 뒤 켈리 비율을 계산합니다. 표본이 부족하면 베팅을 제안하지 않습니다.</div>
+        <details class="dash-more"><summary>승률·손익비를 직접 입력해 계산하기</summary>
+          <div class="cond-form"><label>승률 %<input id="mP" type="number" min="0" max="100" step="0.5" value="55"></label><label>손익비 (평균 수익 ÷ 평균 손실)<input id="mB" type="number" min="0.01" step="0.1" value="1.5"></label></div>
+          <div class="cond-actions"><button type="button" class="dash-btn" id="aiManualRun">직접 계산</button></div><div id="aiManualResult"></div></details>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-head"><h2>2-3. 월 1회 리밸런싱 — 늘어난 수익을 안전한 곳으로</h2><span class="dash-tag">모의 장부 · 실제 주문 없음</span></div>
+        <div id="aiShieldAccount" class="dash-empty">불러오는 중…</div>
+      </div>
+    </div>
+  </section>
+
 </main>
 <footer id="site-footer">
   <div class="w-full px-4 py-3 flex items-center justify-between">
@@ -192,7 +252,8 @@
 </footer>
 <script src="/js/config.js"></script>
 <script src="/js/common.js?v=20260813-common-menu-3"></script>
-<script src="/js/dashboard.js?v=20261014-1"></script>
+<script src="/js/dashboard.js?v=20261014-2"></script>
+<script src="/js/dashboard-ai.js?v=20261014-1"></script>
 <script>
 (async () => {
   const user = await initPage();

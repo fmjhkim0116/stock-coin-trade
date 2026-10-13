@@ -70,6 +70,11 @@ class ExpressionTests(unittest.TestCase):
             with self.assertRaises(lab.ConditionError, msg=bad):
                 lab.evaluate(self.bars, None, bad)
 
+    def test_numpy_scalar_inputs_are_accepted(self):
+        import numpy as np
+        bars = [{**b, "close": np.float64(b["close"]), "open": np.float64(b["open"]), "volume": np.float64(b["volume"])} for b in self.bars]
+        self.assertEqual(lab.evaluate(bars, None, "close > ma(20)"), lab.evaluate(self.bars, None, "close > ma(20)"))
+
     def test_too_complex(self):
         with self.assertRaises(lab.ConditionError):
             lab.evaluate(self.bars, None, " and ".join(["close > 1"] * 40))

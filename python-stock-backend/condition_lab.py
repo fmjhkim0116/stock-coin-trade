@@ -128,12 +128,13 @@ class _Evaluator:
         self.bars = bars
         self.cache = {}
         flow_map = {row["date"]: row for row in flows or []}
+        # plain floats: numpy scalars would make comparisons return numpy.bool_, which the type check rejects
         self.series = {
-            "open": [b["open"] for b in bars], "high": [b["high"] for b in bars],
-            "low": [b["low"] for b in bars], "close": [b["close"] for b in bars],
-            "volume": [b["volume"] for b in bars],
-            "foreign_net": [flow_map[b["date"]]["foreign"] if b.get("date") in flow_map else None for b in bars],
-            "inst_net": [flow_map[b["date"]]["institution"] if b.get("date") in flow_map else None for b in bars],
+            "open": [float(b["open"]) for b in bars], "high": [float(b["high"]) for b in bars],
+            "low": [float(b["low"]) for b in bars], "close": [float(b["close"]) for b in bars],
+            "volume": [float(b["volume"]) for b in bars],
+            "foreign_net": [float(flow_map[b["date"]]["foreign"]) if b.get("date") in flow_map else None for b in bars],
+            "inst_net": [float(flow_map[b["date"]]["institution"]) if b.get("date") in flow_map else None for b in bars],
         }
 
     # periods must be integer literals so users cannot request huge windows from data
@@ -360,6 +361,6 @@ def trade_backtest(bars, flows, buy_expr, sell_expr=None, max_hold=20, stop_loss
         "max_drawdown": mdd, "trade_count": len(trades),
         "win_rate": len(wins) / len(trades) if trades else None,
         "avg_trade_return": statistics.fmean(t["return"] for t in trades) if trades else None,
-        "open_position": bool(shares), "trades": trades[-30:],
+        "open_position": bool(shares), "trades": trades[-30:], "trade_returns": [t["return"] for t in trades],
         "signal_today": bool(buy[-1]) if buy else False,
     }

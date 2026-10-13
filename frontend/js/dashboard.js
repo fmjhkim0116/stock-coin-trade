@@ -6,9 +6,10 @@
   const pct = (v, d = 2) => v === null || v === undefined ? '–' : `${v > 0 ? '+' : ''}${(v * 100).toFixed(d)}%`;
   const rate = v => v === null || v === undefined ? '–' : `${v > 0 ? '+' : ''}${Number(v).toFixed(2)}%`;
   const dir = v => v > 0 ? 'up' : v < 0 ? 'down' : '';
-  const TABS = ['overview', 'flows', 'fundamentals', 'portfolio', 'conditions'];
+  const TABS = ['overview', 'flows', 'fundamentals', 'portfolio', 'conditions', 'ai'];
   const loaded = new Set();
   let currentUser = null;
+  const shared = {};  // helpers for dashboard-ai.js (filled below)
 
   async function getJson(path, options) {
     const res = await apiFetch(path, options);
@@ -30,6 +31,9 @@
     $(el).hidden = false; $(el).className = 'dash-empty';
     $(el).innerHTML = `<b>${esc(body.reason || fallback)}</b>${body.configured === false ? '<br><small>서버 환경변수 <code>DART_API_KEY</code>(OpenDART 인증키)를 설정하면 표시됩니다.</small>' : ''}`;
   };
+
+  Object.assign(shared, { esc, num, pct, rate, dir, table, getJson, meta, stockLink });
+  window.dashUtil = shared;
 
   /* ── 1. 지수 · 브리핑 ───────────────────────────────────────── */
   async function loadOverview() {
@@ -197,6 +201,7 @@
     fundamentals: [loadFundamentals, loadContracts],
     portfolio: [loadHoldings, loadWatchlist],
     conditions: [loadPresets, renderSaved],
+    ai: [() => window.initAiPortfolio && window.initAiPortfolio(currentUser)],
   };
   function showTab(name, remember) {
     const key = TABS.includes(name) ? name : 'overview';
