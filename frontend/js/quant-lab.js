@@ -77,6 +77,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
   document.querySelectorAll('[data-quant-tab]').forEach(section => { section.hidden=section.dataset.quantTab !== tab; });
   Object.values(tabSections).flat().forEach(id => { const section=document.getElementById(id); if (section) section.hidden=!(tabSections[tab] || tabSections.simulation).includes(id); });
+  const subtabs={ start:['quant-quickstart'], strategy:['quant-strategies','quant-exit'], analysis:['quant-factors','quant-explorer','quant-backtest'] };
+  const subnav=document.getElementById('quant-subnav');
+  const applySubtab=(name, remember) => {
+    if (!subnav || subnav.hidden) return;
+    const active=subtabs[name] ? name : 'start';
+    Object.entries(subtabs).forEach(([key, ids]) => ids.forEach(id => { const section=document.getElementById(id); if (section) section.hidden=key !== active; }));
+    subnav.querySelectorAll('[data-subtab]').forEach(button => { const on=button.dataset.subtab === active; button.classList.toggle('active', on); button.setAttribute('aria-selected', String(on)); });
+    if (remember) { const url=new URL(location.href); url.searchParams.set('sub', active); history.replaceState(null, '', url); }
+  };
+  if (subnav) subnav.querySelectorAll('[data-subtab]').forEach(button => button.addEventListener('click', () => applySubtab(button.dataset.subtab, true)));
+  applySubtab(new URLSearchParams(location.search).get('sub'), false);
   if (tab === 'algorithm') {
     const guide=document.querySelector('#quant-guide .guide-body');
     if (guide && !guide.querySelector('[data-algorithm-summary]')) guide.insertAdjacentHTML('afterbegin', `<section class="algorithm-summary" data-algorithm-summary><h3>이 화면에서 실제로 계산하는 알고리즘</h3><div><article><b>추세</b><p>MA 5/20과 MA 20/60의 교차·회복으로 상승 흐름을 따릅니다.</p></article><article><b>반전</b><p>RSI가 과매도 구간에서 회복하는 시점을 매수 후보로 봅니다.</p></article><article><b>돌파·모멘텀</b><p>20일 고점·거래량 또는 60일 수익률로 강한 흐름을 찾습니다.</p></article></div><p><strong>공통 원칙:</strong> 각 날짜의 종가와 과거 데이터만 사용하고, 수수료·슬리피지를 넣은 뒤 BUY/SELL 체결과 손익을 저장합니다.</p></section>`);
