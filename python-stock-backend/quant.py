@@ -395,7 +395,6 @@ def _ensure_flow_schema(conn):
           uploaded_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(symbol, flow_date)
         )
     """))
-    conn.execute(text("ALTER TABLE investor_flows ADD COLUMN IF NOT EXISTS name varchar(100)"))
 
 
 def _load_bars_and_flows(conn, symbol, max_bars=1000):

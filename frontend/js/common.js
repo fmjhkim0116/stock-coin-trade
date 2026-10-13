@@ -37,7 +37,6 @@ async function logout() {
 function renderHeader(user) {
   const navGroups = [
     { type: 'single', href: '/index.html', label: '대시보드', icon: 'fa-solid fa-gauge-high' },
-    { type: 'single', href: '/dashboard.html', label: '퀀트 대시보드', icon: 'fa-solid fa-chart-pie' },
     { type: 'group', label: '거래', items: [
       { href: '/trade/order.html', label: '코인',          icon: 'fa-solid fa-coins' },
       { href: '/trade/stock.html', label: '주식',          icon: 'fa-solid fa-chart-line' },

@@ -248,7 +248,7 @@ def get_dashboard_stock_quotes() -> dict[str, dict]:
                 symbol: {
                     "symbol": symbol, "name": info["name"], "market": info["market"],
                     "price": BASE_PRICES[symbol], "prevClose": BASE_PRICES[symbol],
-                    "change": 0, "changeRate": 0, "volume": 0, "tradeAmount": 0, "simulated": True,
+                    "change": 0, "changeRate": 0, "volume": 0, "tradeAmount": 0,
                 }
                 for symbol, info in STOCKS.items()
             }

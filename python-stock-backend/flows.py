@@ -9,8 +9,6 @@ _ALIASES = {
     "foreign": ("foreign", "외국인", "외국인합계", "foreign_net"),
     "institution": ("institution", "기관", "기관합계", "institution_net", "inst"),
     "individual": ("individual", "개인", "individual_net"),
-    "symbol": ("symbol", "종목코드", "code", "단축코드"),
-    "name": ("name", "종목명", "company"),
 }
 _DATE_FORMATS = ("%Y-%m-%d", "%Y%m%d", "%Y/%m/%d", "%Y.%m.%d", "%Y.%m.%d.")
 
@@ -29,17 +27,6 @@ def _parse_date(text):
     raise ValueError(f"unrecognised date: {text!r}")
 
 
-def _parse_text(text):
-    return text.strip()[:100]
-
-
-def _parse_symbol(text):
-    code = text.strip().upper().lstrip("A")  # some exports prefix KRX codes with 'A'
-    if not re.fullmatch(r"\d{6}", code):
-        raise ValueError(f"invalid symbol: {text!r}")
-    return code
-
-
 def _parse_number(text):
     cleaned = text.strip().replace(",", "").replace("+", "")
     if cleaned in ("", "-"):
@@ -49,11 +36,8 @@ def _parse_number(text):
     return float(cleaned)
 
 
-def parse_flows_csv(text, max_rows=20000, multi_symbol=False):
+def parse_flows_csv(text, max_rows=20000):
     """Return rows sorted by date: ``{date, foreign, institution, individual?}``.
-
-    With ``multi_symbol=True`` a ``symbol`` (6-digit code) column is required, an optional ``name``
-    column is kept, and rows are keyed and sorted by (symbol, date).
 
     Raises ``ValueError`` with a line number on malformed input.
     """
@@ -67,8 +51,7 @@ def parse_flows_csv(text, max_rows=20000, multi_symbol=False):
         for key, aliases in _ALIASES.items():
             if _norm(name) in {_norm(a) for a in aliases}:
                 columns.setdefault(key, idx)
-    required = ("date", "foreign", "institution") + (("symbol",) if multi_symbol else ())
-    missing = [k for k in required if k not in columns]
+    missing = [k for k in ("date", "foreign", "institution") if k not in columns]
     if missing:
         raise ValueError(f"missing columns: {', '.join(missing)}")
     rows = {}
@@ -78,10 +61,9 @@ def parse_flows_csv(text, max_rows=20000, multi_symbol=False):
         if len(rows) >= max_rows:
             raise ValueError(f"too many rows (max {max_rows})")
         try:
-            row = {key: _parse_text(record[idx]) if key == "name" else _parse_symbol(record[idx]) if key == "symbol"
-                   else (_parse_date if key == "date" else _parse_number)(record[idx])
-                   for key, idx in columns.items() if multi_symbol or key not in ("symbol", "name")}
+            row = {key: (_parse_date if key == "date" else _parse_number)(record[idx])
+                   for key, idx in columns.items()}
         except (ValueError, IndexError) as exc:
             raise ValueError(f"line {line_no}: {exc}") from exc
-        rows[(row.get("symbol", ""), row["date"])] = row  # later duplicate wins
-    return [rows[k] for k in sorted(rows)]
+        rows[row["date"]] = row  # later duplicate wins
+    return [rows[d] for d in sorted(rows)]

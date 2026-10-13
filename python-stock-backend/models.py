@@ -100,43 +100,6 @@ class HtsWatchMemo(Base):
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
 
-class StockWatchlist(Base):
-    """대시보드 관심종목. HtsWatchMemo(종목별 메모)와 별개로, 메모 없이도 종목을 담을 수 있다."""
-    __tablename__ = "stock_watchlist"
-    __table_args__ = (UniqueConstraint("member_id", "symbol", name="uq_stock_watchlist_member_symbol"),)
-
-    stock_watchlist_id = Column(BigInteger, primary_key=True, autoincrement=True)
-    member_id = Column(BigInteger, ForeignKey("member.member_id"), nullable=False)
-    symbol = Column(String(20), nullable=False)
-    created_at = Column(DateTime, nullable=False, server_default=func.now())
-
-
-class ShieldAccount(Base):
-    """AI Shield 모의 장부: 베팅 계좌와 안전 계좌의 잔액. 실제 주문·이체는 하지 않는다."""
-    __tablename__ = "shield_account"
-
-    member_id = Column(BigInteger, ForeignKey("member.member_id"), primary_key=True)
-    risky = Column(BigInteger, nullable=False)
-    safe = Column(BigInteger, nullable=False, default=0)
-    baseline = Column(BigInteger, nullable=False)
-    last_rebalance_month = Column(String(7))
-    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
-
-
-class ShieldLedger(Base):
-    __tablename__ = "shield_ledger"
-
-    shield_ledger_id = Column(BigInteger, primary_key=True, autoincrement=True)
-    member_id = Column(BigInteger, ForeignKey("member.member_id"), nullable=False)
-    month = Column(String(7), nullable=False)
-    risky_before = Column(BigInteger, nullable=False)
-    gain = Column(BigInteger, nullable=False)
-    swept = Column(BigInteger, nullable=False)
-    risky_after = Column(BigInteger, nullable=False)
-    safe_after = Column(BigInteger, nullable=False)
-    created_at = Column(DateTime, nullable=False, server_default=func.now())
-
-
 class AlternativePosition(Base):
     """금속·파생상품·부동산 모의투자 보유 포지션."""
     __tablename__ = "alternative_position"
